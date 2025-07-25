@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Capsule Budget Planner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emoji {
+            font-size: 1.8rem;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .time-capsules {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .capsule {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #ff6b6b;
+            transition: all 0.3s ease;
+        }
+
+        .capsule:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.2);
+        }
+
+        .capsule.locked {
+            background: linear-gradient(135deg, #ddd6fe, #c7d2fe);
+            border-left-color: #8b5cf6;
+        }
+
+        .capsule.unlocked {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-left-color: #10b981;
+            animation: unlock 0.5s ease;
+        }
+
+        @keyframes unlock {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .capsule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .capsule-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .locked-status {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .unlocked-status {
+            background: #10b981;
+            color: white;
+        }
+
+        .countdown {
+            font-weight: bold;
+            color: #8b5cf6;
+        }
+
+        .budget-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Time Capsule Budget Planner</h1>
+            <p>Plan your time wisely and save messages for the future</p>
+        </div>
+
+        <div class="main-content">
+            <div class="section">
+                <h2><span class="emoji">📊</span> Daily Time Budget</h2>
+                <div class="input-group">
+                    <label for="sleep">Sleep (hours)</label>
+                    <input type="number" id="sleep" min="0" max="24" value="8">
+                </div>
+                <div class="input-group">
+                    <label for="work">Work/Study (hours)</label>
+                    <input type="number" id="work" min="0" max="24" value="8">
+                </div>
+                <div class="input-group">
+                    <label for="exercise">Exercise (hours)</label>
+                    <input type="number" id="exercise" min="0" max="24" value="1">
+                </div>
+                <div class="input-group">
+                    <label for="leisure">Leisure (hours)</label>
+                    <input type="number" id="leisure" min="0" max="24" value="4">
+                </div>
+                <div class="input-group">
+                    <label for="meals">Meals/Cooking (hours)</label>
+                    <input type="number" id="meals" min="0" max="24" value="2">
+                </div>
+                <div class="input-group">
+                    <label for="other">Other (hours)</label>
+                    <input type="number" id="other" min="0" max="24" value="1">
+                </div>
+                <button onclick="updateChart()">Update Budget</button>
+                
+                <div class="chart-container">
+                    <canvas id="timeChart"></canvas>
+                </div>
+                
+                <div class="budget-summary" id="budgetSummary">
+                    <div class="summary-card">
+                        <h3>Total Hours</h3>
+                        <div class="value" id="totalHours">24</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Productivity</h3>
+                        <div class="value" id="productivity">50%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2><span class="emoji">💌</span> Create Time Capsule</h2>
+                <div class="input-group">
+                    <label for="capsuleTitle">Title</label>
+                    <input type="text" id="capsuleTitle" placeholder="My Future Self Message">
+                </div>
+                <div class="input-group">
+                    <label for="capsuleMessage">Message</label>
+                    <textarea id="capsuleMessage" rows="4" placeholder="Write a message to your future self..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="unlockDays">Unlock after (days)</label>
+                    <input type="number" id="unlockDays" min="1" value="30">
+                </div>
+                <button onclick="createCapsule()">Create Time Capsule</button>
+            </div>
+        </div>
+
+        <div class="section time-capsules">
+            <h2><span class="emoji">🗂️</span> Your Time Capsules</h2>
+            <div id="capsulesContainer">
+                <p style="text-align: center; color: #888; padding: 20px;">No time capsules yet. Create your first one above!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let capsules = [];
+
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('timeChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sleep', 'Work/Study', 'Exercise', 'Leisure', 'Meals', 'Other'],
+                    datasets: [{
+                        data: [8, 8, 1, 4, 2, 1],
+                        backgroundColor: [
+                            '#ff6b6b',
+                            '#4ecdc4',
+                            '#45b7d1',
+                            '#96ceb4',
+                            '#feca57',
+                            '#ff9ff3'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 10,
+                        spacing: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            const sleep = parseFloat(document.getElementById('sleep').value) || 0;
+            const work = parseFloat(document.getElementById('work').value) || 0;
+            const exercise = parseFloat(document.getElementById('exercise').value) || 0;
+            const leisure = parseFloat(document.getElementById('leisure').value) || 0;
+            const meals = parseFloat(document.getElementById('meals').value) || 0;
+            const other = parseFloat(document.getElementById('other').value) || 0;
+
+            const total = sleep + work + exercise + leisure + meals + other;
+            const productivity = ((work + exercise) / total * 100).toFixed(0);
+
+            chart.data.datasets[0].data = [sleep, work, exercise, leisure, meals, other];
+            chart.update('active');
+
+            document.getElementById('totalHours').textContent = total.toFixed(1);
+            document.getElementById('productivity').textContent = productivity + '%';
+
+            // Color coding for total hours
+            const totalElement = document.getElementById('totalHours');
+            if (total > 24) {
+                totalElement.style.color = '#ff6b6b';
+            } else if (total < 24) {
+                totalElement.style.color = '#ffa726';
+            } else {
+                totalElement.style.color = '#10b981';
+            }
+        }
+
+        function createCapsule() {
+            const title = document.getElementById('capsuleTitle').value;
+            const message = document.getElementById('capsuleMessage').value;
+            const days = parseInt(document.getElementById('unlockDays').value);
+
+            if (!title || !message || !days) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            const capsule = {
+                id: Date.now(),
+                title: title,
+                message: message,
+                createdAt: new Date(),
+                unlockDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+                unlocked: false
+            };
+
+            capsules.push(capsule);
+            
+            // Clear form
+            document.getElementById('capsuleTitle').value = '';
+            document.getElementById('capsuleMessage').value = '';
+            document.getElementById('unlockDays').value = '30';
+
+            renderCapsules();
+        }
+
+        function renderCapsules() {
+            const container = document.getElementById('capsulesContainer');
+            
+            if (capsules.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No time capsules yet. Create your first one above!</p>';
+                return;
+            }
+
+            container.innerHTML = capsules.map(capsule => {
+                const now = new Date();
+                const isUnlocked = now >= capsule.unlockDate;
+                const timeLeft = capsule.unlockDate - now;
+                const daysLeft = Math.max(0, Math.ceil(timeLeft / (1000 * 60 * 60 * 24)));
+
+                return `
+                    <div class="capsule ${isUnlocked ? 'unlocked' : 'locked'}">
+                        <div class="capsule-header">
+                            <h3>${capsule.title}</h3>
+                            <span class="capsule-status ${isUnlocked ? 'unlocked-status' : 'locked-status'}">
+                                ${isUnlocked ? '🔓 Unlocked' : '🔒 Locked'}
+                            </span>
+                        </div>
+                        <p><strong>Created:</strong> ${capsule.createdAt.toLocaleDateString()}</p>
+                        <p><strong>Unlock Date:</strong> ${capsule.unlockDate.toLocaleDateString()}</p>
+                        ${!isUnlocked ? 
+                            `<p class="countdown">⏱️ Opens in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</p>` : 
+                            `<div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.8); border-radius: 10px;">
+                                <strong>Message:</strong><br>
+                                ${capsule.message}
+                            </div>`
+                        }
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            initChart();
+            updateChart();
+            
+            // Check for unlocked capsules every minute
+            setInterval(() => {
+                renderCapsules();
+            }, 60000);
+        };
+    </script>
+</body>
+</html>
